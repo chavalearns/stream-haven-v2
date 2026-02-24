@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Themes - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="no-sidebar">
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <h2>🌙 Stream Haven</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="planner.html" class="nav-link">Streams</a>
+            <a href="content-planner.html" class="nav-link">Content</a>
+            <a href="calendar.html" class="nav-link">Calendar</a>
+            <a href="goals.html" class="nav-link">Goals</a>
+            <a href="game.html" class="nav-link">Game</a>
+            <a href="ideas.html" class="nav-link">Ideas</a>
+            <a href="growth.html" class="nav-link">Growth</a>
+            <a href="links.html" class="nav-link">Links</a>
+            <a href="themes.html" class="nav-link active">Themes</a>
+            <a href="accounts.html" class="nav-link">Accounts</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span class="account-name">Account</span>
+            <div id="userEmail"></div>
+        </div>
+    </nav>
+
+    <main class="main-content-full">
+        <div class="page-header mb-3">
+            <h1>Theme Customizer</h1>
+            <p>Personalize your Stream Haven experience</p>
+        </div>
+
+        <!-- Current Theme Display -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Current Theme</h3>
+            </div>
+            <div class="current-theme-display">
+                <div class="theme-info">
+                    <h4 id="currentThemeName">Lavender</h4>
+                    <p id="currentThemeDescription">A calming purple theme with soft gradients</p>
+                </div>
+                <div class="theme-preview-large" id="currentThemePreview" style="background: linear-gradient(135deg, #c4b5fd, #e9d5ff);">
+                </div>
+            </div>
+        </div>
+
+        <!-- Theme Mode Toggle -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Theme Mode</h3>
+            </div>
+            <div class="theme-mode-toggle">
+                <label class="switch" id="themeModeSwitch">
+                    <div class="switch-toggle"></div>
+                </label>
+                <span id="themeModeLabel">Dark Mode</span>
+            </div>
+        </div>
+
+        <!-- Theme Selection -->
+        <div class="card">
+            <div class="widget-header">
+                <h3 class="widget-title">Choose Theme</h3>
+                <span class="widget-badge">8 Themes Available</span>
+            </div>
+            <div class="theme-grid" id="themeGrid">
+                <!-- Themes will be generated here -->
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Theme descriptions
+        const THEME_DESCRIPTIONS = {
+            lavender: 'A calming purple theme with soft gradients',
+            rose: 'A warm pink theme with romantic undertones',
+            mint: 'A refreshing green theme with natural vibes',
+            sky: 'A serene blue theme with peaceful atmosphere',
+            peach: 'A warm orange theme with sunset colors',
+            coral: 'A vibrant hot pink theme with energy',
+            lemon: 'A bright yellow theme with sunny disposition',
+            aqua: 'A cool teal theme with oceanic feel'
+        };
+
+        // Current theme state
+        let currentTheme = APP_CONFIG.DEFAULT_THEME;
+        let currentThemeMode = APP_CONFIG.DEFAULT_THEME_MODE;
+
+        // Theme functions
+        function initializeThemes() {
+            renderThemeGrid();
+            loadCurrentTheme();
+            setupThemeModeToggle();
+        }
+
+        function renderThemeGrid() {
+            const themeGrid = document.getElementById('themeGrid');
+            
+            themeGrid.innerHTML = Object.entries(THEMES).map(([key, theme]) => `
+                <div class="theme-option ${key === currentTheme ? 'active' : ''}" 
+                     onclick="selectTheme('${key}')"
+                     data-theme="${key}">
+                    <div class="theme-preview" style="background: ${theme.color}"></div>
+                    <div class="theme-name">${theme.name}</div>
+                </div>
+            `).join('');
+        }
+
+        async function loadCurrentTheme() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                // Load from settings
+                if (window.userSettings) {
+                    currentTheme = window.userSettings.pastel_theme || APP_CONFIG.DEFAULT_THEME;
+                    currentThemeMode = window.userSettings.theme_mode || APP_CONFIG.DEFAULT_THEME_MODE;
+                }
+
+                // Apply theme
+                applyTheme(currentTheme, currentThemeMode);
+                updateCurrentThemeDisplay();
+                updateThemeModeToggle();
+
+            } catch (error) {
+                console.error('Failed to load current theme:', error);
+            }
+        }
+
+        function applyTheme(theme, mode) {
+            document.body.setAttribute('data-theme', theme);
+            document.body.setAttribute('data-theme-mode', mode);
+            currentTheme = theme;
+            currentThemeMode = mode;
+        }
+
+        function updateCurrentThemeDisplay() {
+            const themeName = document.getElementById('currentThemeName');
+            const themeDescription = document.getElementById('currentThemeDescription');
+            const themePreview = document.getElementById('currentThemePreview');
+            
+            themeName.textContent = THEMES[currentTheme].name;
+            themeDescription.textContent = THEME_DESCRIPTIONS[currentTheme];
+            themePreview.style.background = `linear-gradient(135deg, ${THEMES[currentTheme].color}, ${THEMES[currentTheme].color}dd)`;
+        }
+
+        function updateThemeModeToggle() {
+            const themeSwitch = document.getElementById('themeModeSwitch');
+            const themeLabel = document.getElementById('themeModeLabel');
+            
+            if (currentThemeMode === 'light') {
+                themeSwitch.classList.add('active');
+                themeLabel.textContent = 'Light Mode';
+            } else {
+                themeSwitch.classList.remove('active');
+                themeLabel.textContent = 'Dark Mode';
+            }
+        }
+
+        function setupThemeModeToggle() {
+            const themeSwitch = document.getElementById('themeModeSwitch');
+            
+            themeSwitch.addEventListener('click', async () => {
+                const newMode = currentThemeMode === 'dark' ? 'light' : 'dark';
+                await updateThemeMode(newMode);
+            });
+        }
+
+        async function selectTheme(themeKey) {
+            if (themeKey === currentTheme) {
+                return; // Already selected
+            }
+
+            try {
+                // Apply theme immediately for instant feedback
+                applyTheme(themeKey, currentThemeMode);
+                updateCurrentThemeDisplay();
+                
+                // Update theme grid
+                document.querySelectorAll('.theme-option').forEach(option => {
+                    option.classList.remove('active');
+                });
+                document.querySelector(`[data-theme="${themeKey}"]`).classList.add('active');
+
+                // Save to database
+                if (Auth.isAuthenticated()) {
+                    const { error } = SQLiteDB.update('user_settings', 
+                        { 
+                            pastel_theme: themeKey,
+                            updated_at: new Date().toISOString()
+                        }, 
+                        'user_id = ?', 
+                        [window.currentUser.id]
+                    );
+
+                    if (error) throw error;
+
+                    // Update local settings
+                    if (window.userSettings) {
+                        window.userSettings.pastel_theme = themeKey;
+                    }
+                    
+                    // Save to localStorage for immediate persistence
+                    localStorage.setItem('stream_haven_theme', themeKey);
+                    localStorage.setItem('stream_haven_theme_mode', currentThemeMode);
+                }
+
+                Utils.showNotification(`Theme changed to ${THEMES[themeKey].name}`, 'success');
+
+            } catch (error) {
+                console.error('Failed to update theme:', error);
+                Utils.showNotification('Failed to update theme', 'error');
+                
+                // Revert theme on error
+                applyTheme(currentTheme, currentThemeMode);
+                updateCurrentThemeDisplay();
+            }
+        }
+
+        async function updateThemeMode(mode) {
+            try {
+                applyTheme(currentTheme, mode);
+                updateThemeModeToggle();
+
+                // Save to database
+                if (Auth.isAuthenticated()) {
+                    const { error } = SQLiteDB.update('user_settings', 
+                        { 
+                            theme_mode: mode,
+                            updated_at: new Date().toISOString()
+                        }, 
+                        'user_id = ?', 
+                        [window.currentUser.id]
+                    );
+
+                    if (error) throw error;
+
+                    // Update local settings
+                    if (window.userSettings) {
+                        window.userSettings.theme_mode = mode;
+                    }
+                    
+                    // Save to localStorage for immediate persistence
+                    localStorage.setItem('stream_haven_theme', currentTheme);
+                    localStorage.setItem('stream_haven_theme_mode', mode);
+                }
+
+                Utils.showNotification(`Switched to ${mode === 'light' ? 'Light' : 'Dark'} Mode`, 'success');
+
+            } catch (error) {
+                console.error('Failed to update theme mode:', error);
+                Utils.showNotification('Failed to update theme mode', 'error');
+                
+                // Revert on error
+                applyTheme(currentTheme, currentThemeMode);
+                updateThemeModeToggle();
+            }
+        }
+
+        // Add themes specific styles
+        const themesStyles = `
+            .current-theme-display {
+                display: flex;
+                align-items: center;
+                gap: 2rem;
+            }
+            
+            .theme-info h4 {
+                color: var(--accent);
+                margin-bottom: 0.5rem;
+            }
+            
+            .theme-preview-large {
+                width: 80px;
+                height: 80px;
+                border-radius: 1rem;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .theme-mode-toggle {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+            
+            .theme-mode-toggle .switch {
+                cursor: pointer;
+            }
+            
+            .theme-mode-toggle span {
+                color: var(--text-primary);
+                font-weight: 500;
+            }
+        `;
+
+        // Add styles to page
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = themesStyles;
+        document.head.appendChild(styleSheet);
+
+        // Load themes when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (await Auth.checkAuth()) {
+                initializeThemes();
+            } else {
+                // Still initialize themes for visual feedback even without auth
+                initializeThemes();
+            }
+        });
+
+        // Reload theme when account switches
+        document.addEventListener('accountSwitched', loadCurrentTheme);
+
+        // Expose functions globally
+        window.selectTheme = selectTheme;
+        window.updateThemeMode = updateThemeMode;
+        window.loadPageData = loadCurrentTheme;
+    </script>
+</body>
+</html>

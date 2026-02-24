@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Links - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="no-sidebar">
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <h2>🌙 Stream Haven</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="planner.html" class="nav-link">Streams</a>
+            <a href="content-planner.html" class="nav-link">Content</a>
+            <a href="calendar.html" class="nav-link">Calendar</a>
+            <a href="goals.html" class="nav-link">Goals</a>
+            <a href="game.html" class="nav-link">Game</a>
+            <a href="ideas.html" class="nav-link">Ideas</a>
+            <a href="growth.html" class="nav-link">Growth</a>
+            <a href="links.html" class="nav-link active">Links</a>
+            <a href="themes.html" class="nav-link">Themes</a>
+            <a href="accounts.html" class="nav-link">Accounts</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span class="account-name">Account</span>
+            <div id="userEmail"></div>
+        </div>
+    </nav>
+
+    <main class="main-content-full">
+        <div class="page-header mb-3">
+            <h1>Quick Links</h1>
+            <p>Save and organize your frequently used links</p>
+        </div>
+
+        <!-- Add Link Form -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Add New Link</h3>
+            </div>
+            <form id="addLinkForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label" for="linkName">Link Name</label>
+                        <input type="text" id="linkName" class="form-input" placeholder="Enter link name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="linkUrl">URL</label>
+                        <input type="url" id="linkUrl" class="form-input" placeholder="https://example.com" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn">Add Link</button>
+            </form>
+        </div>
+
+        <!-- Links List -->
+        <div class="card">
+            <div class="widget-header">
+                <h3 class="widget-title">Your Links</h3>
+                <span class="widget-badge" id="linkCount">0</span>
+            </div>
+            <div id="linksList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔗</div>
+                    <div class="empty-state-title">No links saved</div>
+                    <div class="empty-state-text">Add your first link to build your quick access library</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Links functions
+        async function loadLinks() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                const { data: links, error } = SQLiteDB.getAll('quick_links', 'user_id = ? AND account_id = ?', [window.currentUser.id, window.currentAccount.id], 'created_at DESC');
+
+                if (error) throw error;
+
+                const linksList = document.getElementById('linksList');
+                const linkCount = document.getElementById('linkCount');
+                
+                linkCount.textContent = links?.length || 0;
+
+                if (links && links.length > 0) {
+                    linksList.innerHTML = links.map(link => `
+                        <div class="list-item">
+                            <div class="link-info">
+                                <div>
+                                    <strong>${link.name}</strong>
+                                    <br>
+                                    <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-url">
+                                        ${link.url}
+                                    </a>
+                                    <br>
+                                    <small class="text-secondary">Added ${Utils.formatDate(link.created_at)}</small>
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn btn-secondary" onclick="openLink('${link.url}')">Open</button>
+                                <button class="btn btn-danger" onclick="deleteLink('${link.id}')">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    linksList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔗</div>
+                            <div class="empty-state-title">No links saved</div>
+                            <div class="empty-state-text">Add your first link to build your quick access library</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load links:', error);
+                Utils.showNotification('Failed to load links', 'error');
+            }
+        }
+
+        // Add new link
+        document.getElementById('addLinkForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('linkName').value.trim();
+            const url = document.getElementById('linkUrl').value.trim();
+
+            if (!name || !url) {
+                Utils.showNotification('Please fill in all fields', 'error');
+                return;
+            }
+
+            // Validate URL
+            if (!Utils.validateURL(url)) {
+                Utils.showNotification('Please enter a valid URL', 'error');
+                return;
+            }
+
+            try {
+                const { data, error } = SQLiteDB.insert('quick_links', {
+                        user_id: window.currentUser.id,
+                        account_id: window.currentAccount.id,
+                        name: name,
+                        url: url
+                    });
+
+                if (error) throw error;
+
+                Utils.showNotification('Link added successfully!', 'success');
+                
+                // Reset form
+                document.getElementById('addLinkForm').reset();
+                
+                // Reload links
+                await loadLinks();
+
+            } catch (error) {
+                console.error('Failed to add link:', error);
+                Utils.showNotification('Failed to add link', 'error');
+            }
+        });
+
+        // Open link
+        function openLink(url) {
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        // Delete link
+        async function deleteLink(linkId) {
+            if (!confirm('Are you sure you want to delete this link?')) {
+                return;
+            }
+
+            try {
+                const { error } = SQLiteDB.delete('quick_links', 'id = ? AND user_id = ?', [linkId, window.currentUser.id]);
+
+                if (error) throw error;
+
+                Utils.showNotification('Link deleted successfully', 'success');
+                await loadLinks();
+
+            } catch (error) {
+                console.error('Failed to delete link:', error);
+                Utils.showNotification('Failed to delete link', 'error');
+            }
+        }
+
+        // Add links specific styles
+        const linksStyles = `
+            .link-info {
+                flex: 1;
+            }
+            
+            .link-url {
+                color: var(--accent);
+                text-decoration: none;
+                word-break: break-all;
+                font-size: 0.9rem;
+            }
+            
+            .link-url:hover {
+                color: var(--accent-hover);
+                text-decoration: underline;
+            }
+            
+            .item-actions {
+                display: flex;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+        `;
+
+        // Add styles to page
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = linksStyles;
+        document.head.appendChild(styleSheet);
+
+        // Load links when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (await Auth.checkAuth()) {
+                await loadLinks();
+            }
+        });
+
+        // Reload links when account switches
+        document.addEventListener('accountSwitched', loadLinks);
+
+        // Expose functions globally
+        window.openLink = openLink;
+        window.deleteLink = deleteLink;
+        window.loadPageData = loadLinks;
+    </script>
+</body>
+</html>

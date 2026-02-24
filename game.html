@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Goals - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="no-sidebar">
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <h2>🌙 Stream Haven</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="planner.html" class="nav-link">Streams</a>
+            <a href="content-planner.html" class="nav-link">Content</a>
+            <a href="calendar.html" class="nav-link">Calendar</a>
+            <a href="goals.html" class="nav-link">Goals</a>
+            <a href="sims.html" class="nav-link active">Sims</a>
+            <a href="ideas.html" class="nav-link">Ideas</a>
+            <a href="growth.html" class="nav-link">Growth</a>
+            <a href="links.html" class="nav-link">Links</a>
+            <a href="themes.html" class="nav-link">Themes</a>
+            <a href="accounts.html" class="nav-link">Accounts</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span class="account-name">Account</span>
+            <div id="userEmail"></div>
+        </div>
+    </nav>
+
+    <main class="main-content-full">
+        <div class="page-header mb-3">
+            <h1>Game Goals</h1>
+            <p>Track your sims 4 and any other games you play</p>
+        </div>
+
+        <!-- Add Sims Goal Form -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Add New Game Goal</h3>
+            </div>
+            <form id="addSimsGoalForm">
+                <div class="form-group">
+                    <label class="form-label" for="simsGoalText">Goal Description</label>
+                    <input type="text" id="simsGoalText" class="form-input" placeholder="Enter your game goal" required>
+                </div>
+                <button type="submit" class="btn">Add Goal</button>
+            </form>
+        </div>
+
+        <!-- Sims Goals List -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Active Game Goals</h3>
+                <span class="widget-badge" id="simsGoalCount">0</span>
+            </div>
+            <div id="simsGoalsList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎮</div>
+                    <div class="empty-state-title">No game goals set</div>
+                    <div class="empty-state-text">Add your first game goal to start tracking</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="card">
+            <div class="widget-header">
+                <h3 class="widget-title">Progress Overview</h3>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalGoals">0</div>
+                    <div class="stat-label">Total Goals</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completedGoals">0</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="remainingGoals">0</div>
+                    <div class="stat-label">Remaining</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completionRate">0%</div>
+                    <div class="stat-label">Completion Rate</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Sims goals functions
+        async function loadSimsGoals() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                const { data: goals, error } = SQLiteDB.getAll('sims_goals', 'user_id = ? AND account_id = ?', [window.currentUser.id, window.currentAccount.id], 'created_at DESC');
+
+                if (error) throw error;
+
+                const goalsList = document.getElementById('simsGoalsList');
+                const goalCount = document.getElementById('simsGoalCount');
+                
+                goalCount.textContent = goals?.length || 0;
+
+                if (goals && goals.length > 0) {
+                    goalsList.innerHTML = goals.map(goal => `
+                        <div class="list-item ${goal.completed ? 'completed' : ''}">
+                            <div class="sims-goal-info">
+                                <div>
+                                    <strong>${goal.text}</strong>
+                                    ${goal.completed ? '<span class="badge">✓ Completed</span>' : ''}
+                                    <br>
+                                    <small class="text-secondary">Added ${Utils.formatDate(goal.created_at)}</small>
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                ${!goal.completed ? 
+                                    `<button class="btn btn-success" onclick="completeSimsGoal('${goal.id}')">Complete</button>` : 
+                                    `<button class="btn btn-secondary" onclick="uncompleteSimsGoal('${goal.id}')">Undo</button>`
+                                }
+                                <button class="btn btn-danger" onclick="deleteSimsGoal('${goal.id}')">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    goalsList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🎮</div>
+                            <div class="empty-state-title">No game goals set</div>
+                            <div class="empty-state-text">Add your first game goal to start tracking</div>
+                        </div>
+                    `;
+                }
+
+                // Update stats
+                updateSimsStats(goals || []);
+
+            } catch (error) {
+                console.error('Failed to load sims goals:', error);
+                Utils.showNotification('Failed to load sims goals', 'error');
+            }
+        }
+
+        // Update statistics
+        function updateSimsStats(goals) {
+            const total = goals.length;
+            const completed = goals.filter(g => g.completed).length;
+            const remaining = total - completed;
+            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('totalGoals').textContent = total;
+            document.getElementById('completedGoals').textContent = completed;
+            document.getElementById('remainingGoals').textContent = remaining;
+            document.getElementById('completionRate').textContent = `${rate}%`;
+        }
+
+        // Add new sims goal
+        document.getElementById('addSimsGoalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const text = document.getElementById('simsGoalText').value.trim();
+
+            if (!text) {
+                Utils.showNotification('Please enter a goal description', 'error');
+                return;
+            }
+
+            try {
+                const { data, error } = SQLiteDB.insert('sims_goals', {
+                        user_id: window.currentUser.id,
+                        account_id: window.currentAccount.id,
+                        text: text,
+                        completed: false
+                    });
+
+                if (error) throw error;
+
+                Utils.showNotification('Game goal added successfully!', 'success');
+                
+                // Reset form
+                document.getElementById('addSimsGoalForm').reset();
+                
+                // Reload goals
+                await loadSimsGoals();
+
+            } catch (error) {
+                console.error('Failed to add sims goal:', error);
+                Utils.showNotification('Failed to add game goal', 'error');
+            }
+        });
+
+        // Complete sims goal
+        async function completeSimsGoal(goalId) {
+            try {
+                const { error } = SQLiteDB.update('sims_goals', 
+                    { completed: true }, 
+                    'id = ? AND user_id = ?', 
+                    [goalId, window.currentUser.id]
+                );
+
+                if (error) throw error;
+
+                Utils.showNotification('🎉 Goal completed! Great job!', 'success');
+                await loadSimsGoals();
+
+            } catch (error) {
+                console.error('Failed to complete sims goal:', error);
+                Utils.showNotification('Failed to complete goal', 'error');
+            }
+        }
+
+        // Undo complete sims goal
+        async function uncompleteSimsGoal(goalId) {
+            try {
+                const { error } = SQLiteDB.update('sims_goals', 
+                    { completed: false }, 
+                    'id = ? AND user_id = ?', 
+                    [goalId, window.currentUser.id]
+                );
+
+                if (error) throw error;
+
+                Utils.showNotification('Goal completion undone', 'success');
+                await loadSimsGoals();
+
+            } catch (error) {
+                console.error('Failed to undo sims goal completion:', error);
+                Utils.showNotification('Failed to undo goal completion', 'error');
+            }
+        }
+
+        // Delete sims goal
+        async function deleteSimsGoal(goalId) {
+            if (!confirm('Are you sure you want to delete this goal?')) {
+                return;
+            }
+
+            try {
+                const { error } = SQLiteDB.delete('sims_goals', 'id = ? AND user_id = ?', [goalId, window.currentUser.id]);
+
+                if (error) throw error;
+
+                Utils.showNotification('Goal deleted successfully', 'success');
+                await loadSimsGoals();
+
+            } catch (error) {
+                console.error('Failed to delete sims goal:', error);
+                Utils.showNotification('Failed to delete goal', 'error');
+            }
+        }
+
+        // Add sims specific styles
+        const simsStyles = `
+            .sims-goal-info {
+                flex: 1;
+            }
+            
+            .badge {
+                background: var(--success);
+                color: white;
+                padding: 0.25rem 0.5rem;
+                border-radius: 1rem;
+                font-size: 0.8rem;
+                font-weight: 600;
+                margin-left: 0.5rem;
+            }
+        `;
+
+        // Add styles to page
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = simsStyles;
+        document.head.appendChild(styleSheet);
+
+        // Load sims goals when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (await Auth.checkAuth()) {
+                await loadSimsGoals();
+            }
+        });
+
+        // Reload sims goals when account switches
+        document.addEventListener('accountSwitched', loadSimsGoals);
+
+        // Expose functions globally
+        window.completeSimsGoal = completeSimsGoal;
+        window.uncompleteSimsGoal = uncompleteSimsGoal;
+        window.deleteSimsGoal = deleteSimsGoal;
+        window.loadPageData = loadSimsGoals;
+    </script>
+</body>
+</html>

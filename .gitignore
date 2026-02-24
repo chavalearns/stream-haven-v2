@@ -1,0 +1,61 @@
+# Ignore files for GitHub Pages deployment
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node modules (if any)
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database files (SQLite will be created in browser)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Test files
+test/
+tests/
+*.test.js
+
+# Coverage reports
+coverage/
+
+# Package manager files
+package-lock.json
+yarn.lock
+
+# Local development files
+.local/
+local/
+
+# Backup files
+*.bak
+*.backup

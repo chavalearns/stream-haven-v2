@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="no-sidebar">
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <h2>🌙 Stream Haven</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="planner.html" class="nav-link">Streams</a>
+            <a href="content-planner.html" class="nav-link">Content</a>
+            <a href="calendar.html" class="nav-link">Calendar</a>
+            <a href="goals.html" class="nav-link">Goals</a>
+            <a href="game.html" class="nav-link">Game</a>
+            <a href="ideas.html" class="nav-link">Ideas</a>
+            <a href="growth.html" class="nav-link">Growth</a>
+            <a href="links.html" class="nav-link">Links</a>
+            <a href="themes.html" class="nav-link">Themes</a>
+            <a href="accounts.html" class="nav-link">Accounts</a>
+            <a href="settings.html" class="nav-link active">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span class="account-name">Account</span>
+            <div id="userEmail"></div>
+        </div>
+    </nav>
+
+    <main class="main-content-full">
+        <div class="page-header mb-3">
+            <h1>Settings</h1>
+            <p>Manage your account and application settings</p>
+        </div>
+
+        <!-- Profile Information -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Profile Information</h3>
+            </div>
+            <div class="profile-info">
+                <div class="info-row">
+                    <label>Email:</label>
+                    <span id="profileEmail">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <label>Name:</label>
+                    <span id="profileName">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <label>Current Account:</label>
+                    <span id="profileAccount">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <label>Member Since:</label>
+                    <span id="profileMemberSince">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Theme Settings -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Theme Settings</h3>
+            </div>
+            <div class="theme-settings">
+                <div class="setting-row">
+                    <label>Current Theme:</label>
+                    <span id="settingsCurrentTheme">Loading...</span>
+                    <a href="themes.html" class="btn btn-secondary">Change Theme</a>
+                </div>
+                <div class="setting-row">
+                    <label>Theme Mode:</label>
+                    <div class="theme-mode-toggle">
+                        <label class="switch" id="settingsThemeModeSwitch">
+                            <div class="switch-toggle"></div>
+                        </label>
+                        <span id="settingsThemeModeLabel">Dark Mode</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Data Management</h3>
+            </div>
+            <div class="data-actions">
+                <div class="action-row">
+                    <div class="action-info">
+                        <h4>Export Data</h4>
+                        <p>Download all your data as a JSON file</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="exportData()">Export All Data</button>
+                </div>
+                <div class="action-row danger">
+                    <div class="action-info">
+                        <h4>Clear All Data</h4>
+                        <p>Permanently delete all data for the current account</p>
+                    </div>
+                    <button class="btn btn-danger" onclick="confirmClearData()">Clear All Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Actions -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Account Actions</h3>
+            </div>
+            <div class="account-actions">
+                <div class="action-row">
+                    <div class="action-info">
+                        <h4>Switch Account</h4>
+                        <p>Change to a different account</p>
+                    </div>
+                    <a href="accounts.html" class="btn btn-secondary">Manage Accounts</a>
+                </div>
+                <div class="action-row danger">
+                    <div class="action-info">
+                        <h4>Sign Out</h4>
+                        <p>Sign out of your account</p>
+                    </div>
+                    <button class="btn btn-danger" onclick="signOut()">Sign Out</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- About -->
+        <div class="card">
+            <div class="widget-header">
+                <h3 class="widget-title">About</h3>
+            </div>
+            <div class="about-info">
+                <div class="info-row">
+                    <label>App Version:</label>
+                    <span>${APP_CONFIG.VERSION}</span>
+                </div>
+                <div class="info-row">
+                    <label>App Name:</label>
+                    <span>${APP_CONFIG.APP_NAME}</span>
+                </div>
+                <div class="info-row">
+                    <label>Description:</label>
+                    <span>Complete streaming dashboard for content creators</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Settings functions
+        async function loadSettingsData() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                // Load profile information
+                loadProfileInfo();
+                
+                // Load theme settings
+                loadThemeSettings();
+                
+                // Setup theme mode toggle
+                setupThemeModeToggle();
+
+            } catch (error) {
+                console.error('Failed to load settings data:', error);
+                Utils.showNotification('Failed to load settings', 'error');
+            }
+        }
+
+        function loadProfileInfo() {
+            // Email
+            const profileEmail = document.getElementById('profileEmail');
+            if (profileEmail && window.currentUser) {
+                profileEmail.textContent = window.currentUser.email;
+            }
+
+            // Name
+            const profileName = document.getElementById('profileName');
+            if (profileName && window.currentUser) {
+                const name = window.currentUser.user_metadata?.name || 'Not set';
+                profileName.textContent = name;
+            }
+
+            // Current account
+            const profileAccount = document.getElementById('profileAccount');
+            if (profileAccount && window.currentAccount) {
+                const accountColor = document.createElement('span');
+                accountColor.className = 'account-color';
+                accountColor.style.backgroundColor = window.currentAccount.color;
+                
+                profileAccount.innerHTML = '';
+                profileAccount.appendChild(accountColor);
+                profileAccount.appendChild(document.createTextNode(window.currentAccount.name));
+            }
+
+            // Member since
+            const profileMemberSince = document.getElementById('profileMemberSince');
+            if (profileMemberSince && window.currentUser) {
+                profileMemberSince.textContent = Utils.formatDate(window.currentUser.created_at);
+            }
+        }
+
+        function loadThemeSettings() {
+            // Current theme
+            const settingsCurrentTheme = document.getElementById('settingsCurrentTheme');
+            if (settingsCurrentTheme && window.userSettings) {
+                const theme = window.userSettings.pastel_theme || APP_CONFIG.DEFAULT_THEME;
+                settingsCurrentTheme.textContent = THEMES[theme]?.name || 'Unknown';
+            }
+
+            // Theme mode
+            const settingsThemeModeLabel = document.getElementById('settingsThemeModeLabel');
+            if (settingsThemeModeLabel && window.userSettings) {
+                const mode = window.userSettings.theme_mode || APP_CONFIG.DEFAULT_THEME_MODE;
+                settingsThemeModeLabel.textContent = mode === 'light' ? 'Light Mode' : 'Dark Mode';
+            }
+        }
+
+        function setupThemeModeToggle() {
+            const themeSwitch = document.getElementById('settingsThemeModeSwitch');
+            
+            if (themeSwitch && window.userSettings) {
+                const mode = window.userSettings.theme_mode || APP_CONFIG.DEFAULT_THEME_MODE;
+                
+                if (mode === 'light') {
+                    themeSwitch.classList.add('active');
+                }
+                
+                themeSwitch.addEventListener('click', async () => {
+                    const newMode = mode === 'dark' ? 'light' : 'dark';
+                    await updateThemeMode(newMode);
+                });
+            }
+        }
+
+        async function updateThemeMode(mode) {
+            try {
+                // Apply theme
+                document.body.setAttribute('data-theme-mode', mode);
+                
+                // Update label
+                const label = document.getElementById('settingsThemeModeLabel');
+                const toggle = document.getElementById('settingsThemeModeSwitch');
+                
+                if (mode === 'light') {
+                    label.textContent = 'Light Mode';
+                    toggle.classList.add('active');
+                } else {
+                    label.textContent = 'Dark Mode';
+                    toggle.classList.remove('active');
+                }
+
+                // Save to database
+                const { error } = SQLiteDB.update('user_settings', 
+                    { 
+                        theme_mode: mode,
+                        updated_at: new Date().toISOString()
+                    }, 
+                    'user_id = ?', 
+                    [window.currentUser.id]
+                );
+
+                if (error) throw error;
+
+                // Update local settings
+                if (window.userSettings) {
+                    window.userSettings.theme_mode = mode;
+                }
+
+                Utils.showNotification(`Switched to ${mode === 'light' ? 'Light' : 'Dark'} Mode`, 'success');
+
+            } catch (error) {
+                console.error('Failed to update theme mode:', error);
+                Utils.showNotification('Failed to update theme mode', 'error');
+            }
+        }
+
+        async function exportData() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    Utils.showNotification('Please sign in to export data', 'error');
+                    return;
+                }
+
+                Utils.showNotification('Exporting data...', 'info');
+
+                // Get all data for current account
+                const tables = [
+                    'streams', 'content_planner', 'goals', 'sims_goals', 
+                    'ideas', 'quick_links', 'growth_stats'
+                ];
+
+                const exportData = {
+                    export_date: new Date().toISOString(),
+                    user: {
+                        email: window.currentUser.email,
+                        name: window.currentUser.user_metadata?.name,
+                        created_at: window.currentUser.created_at
+                    },
+                    account: window.currentAccount,
+                    data: {}
+                };
+
+                // Fetch data from all tables
+                for (const table of tables) {
+                    try {
+                        const { data, error } = SQLiteDB.getAll(table, 'user_id = ? AND account_id = ?', [window.currentUser.id, window.currentAccount.id]);
+
+                        if (error) throw error;
+                        exportData.data[table] = data || [];
+                    } catch (error) {
+                        console.error(`Failed to export ${table}:`, error);
+                        exportData.data[table] = [];
+                    }
+                }
+
+                // Create and download JSON file
+                const jsonString = JSON.stringify(exportData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `stream-haven-export-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                Utils.showNotification('Data exported successfully!', 'success');
+
+            } catch (error) {
+                console.error('Failed to export data:', error);
+                Utils.showNotification('Failed to export data', 'error');
+            }
+        }
+
+        function confirmClearData() {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">⚠️ Confirm Data Deletion</h3>
+                        <button class="modal-close" onclick="closeModal()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Warning: This action cannot be undone!</strong></p>
+                        <p>This will permanently delete ALL data for the current account "${window.currentAccount?.name}":</p>
+                        <ul>
+                            <li>All scheduled streams</li>
+                            <li>All content plans</li>
+                            <li>All goals and progress</li>
+                            <li>All ideas and links</li>
+                            <li>All growth statistics</li>
+                        </ul>
+                        <p>Your user account and other accounts will remain intact.</p>
+                        <p>Type <strong>DELETE</strong> to confirm:</p>
+                        <input type="text" id="confirmDeleteInput" class="form-input" placeholder="Type DELETE">
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-danger" onclick="clearAllData()" id="confirmDeleteBtn" disabled>Delete All Data</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Setup confirmation
+            const input = document.getElementById('confirmDeleteInput');
+            const btn = document.getElementById('confirmDeleteBtn');
+            
+            input.addEventListener('input', () => {
+                btn.disabled = input.value !== 'DELETE';
+            });
+        }
+
+        function closeModal() {
+            const modal = document.querySelector('.modal');
+            if (modal) {
+                document.body.removeChild(modal);
+            }
+        }
+
+        async function clearAllData() {
+            try {
+                Utils.showNotification('Deleting all data...', 'info');
+
+                const tables = [
+                    'streams', 'content_planner', 'goals', 'sims_goals', 
+                    'ideas', 'quick_links', 'growth_stats'
+                ];
+
+                // Delete data from all tables
+                for (const table of tables) {
+                    const { error } = SQLiteDB.delete(table, 'user_id = ? AND account_id = ?', [window.currentUser.id, window.currentAccount.id]);
+
+                    if (error) {
+                        console.error(`Failed to delete from ${table}:`, error);
+                    }
+                }
+
+                closeModal();
+                Utils.showNotification('All data deleted successfully', 'success');
+                
+                // Reload current page data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+
+            } catch (error) {
+                console.error('Failed to clear data:', error);
+                Utils.showNotification('Failed to clear data', 'error');
+            }
+        }
+
+        function signOut() {
+            if (confirm('Are you sure you want to sign out?')) {
+                Auth.logOut();
+            }
+        }
+
+        // Add settings specific styles
+        const settingsStyles = `
+            .profile-info, .theme-settings, .about-info {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .info-row, .setting-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.5rem 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .info-row:last-child, .setting-row:last-child {
+                border-bottom: none;
+            }
+            
+            .info-row label, .setting-row label {
+                font-weight: 600;
+                color: var(--text-secondary);
+                min-width: 120px;
+            }
+            
+            .theme-mode-toggle {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+            
+            .data-actions, .account-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            
+            .action-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 0.5rem;
+            }
+            
+            .action-row.danger {
+                border-color: var(--danger);
+                background: rgba(248, 113, 113, 0.05);
+            }
+            
+            .action-info h4 {
+                margin-bottom: 0.25rem;
+                color: var(--text-primary);
+            }
+            
+            .action-info p {
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+            }
+            
+            .modal-body {
+                margin: 1.5rem 0;
+            }
+            
+            .modal-body ul {
+                margin: 1rem 0;
+                padding-left: 1.5rem;
+            }
+            
+            .modal-body li {
+                margin-bottom: 0.5rem;
+            }
+            
+            .modal-footer {
+                display: flex;
+                gap: 1rem;
+                justify-content: flex-end;
+                margin-top: 1.5rem;
+            }
+        `;
+
+        // Add styles to page
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = settingsStyles;
+        document.head.appendChild(styleSheet);
+
+        // Load settings when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (await Auth.checkAuth()) {
+                await loadSettingsData();
+            }
+        });
+
+        // Reload settings when account switches
+        document.addEventListener('accountSwitched', loadSettingsData);
+
+        // Expose functions globally
+        window.exportData = exportData;
+        window.confirmClearData = confirmClearData;
+        window.closeModal = closeModal;
+        window.clearAllData = clearAllData;
+        window.signOut = signOut;
+        window.loadPageData = loadSettingsData;
+    </script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growth Tracker - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="no-sidebar">
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <h2>🌙 Stream Haven</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="planner.html" class="nav-link">Streams</a>
+            <a href="content-planner.html" class="nav-link">Content</a>
+            <a href="calendar.html" class="nav-link">Calendar</a>
+            <a href="goals.html" class="nav-link">Goals</a>
+            <a href="game.html" class="nav-link">Game</a>
+            <a href="ideas.html" class="nav-link">Ideas</a>
+            <a href="growth.html" class="nav-link active">Growth</a>
+            <a href="links.html" class="nav-link">Links</a>
+            <a href="themes.html" class="nav-link">Themes</a>
+            <a href="accounts.html" class="nav-link">Accounts</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span class="account-name">Account</span>
+            <div id="userEmail"></div>
+        </div>
+    </nav>
+
+    <main class="main-content-full">
+        <div class="page-header mb-3">
+            <h1>Growth Tracker</h1>
+            <p>Monitor your follower growth across platforms</p>
+        </div>
+
+        <!-- Update Stats Form -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Update Follower Counts</h3>
+            </div>
+            <form id="updateStatsForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label platform-twitch">Twitch Followers</label>
+                        <input type="number" id="twitchFollowers" class="form-input" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label platform-youtube">YouTube Subscribers</label>
+                        <input type="number" id="youtubeSubscribers" class="form-input" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label platform-tiktok">TikTok Followers</label>
+                        <input type="number" id="tiktokFollowers" class="form-input" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label platform-instagram">Instagram Followers</label>
+                        <input type="number" id="instagramFollowers" class="form-input" placeholder="0" min="0">
+                    </div>
+                </div>
+                <button type="submit" class="btn">Update Stats</button>
+            </form>
+        </div>
+
+        <!-- Current Stats -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Current Stats</h3>
+                <span class="widget-badge" id="lastUpdated">Never</span>
+            </div>
+            <div class="stats-grid" id="currentStats">
+                <div class="stat-card">
+                    <div class="stat-number" id="currentTwitch">0</div>
+                    <div class="stat-label platform-twitch">Twitch</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="currentYoutube">0</div>
+                    <div class="stat-label platform-youtube">YouTube</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="currentTiktok">0</div>
+                    <div class="stat-label platform-tiktok">TikTok</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="currentInstagram">0</div>
+                    <div class="stat-label platform-instagram">Instagram</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Growth History -->
+        <div class="card">
+            <div class="widget-header">
+                <h3 class="widget-title">Growth History</h3>
+                <button class="btn btn-secondary" onclick="loadGrowthHistory()">Refresh</button>
+            </div>
+            <div id="growthHistory">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <div class="empty-state-title">No growth data yet</div>
+                    <div class="empty-state-text">Update your stats to start tracking growth</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Growth tracker functions
+        async function loadCurrentStats() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                const { data: stats, error } = SQLiteDB.getAll('growth_stats', 
+                    'user_id = ? AND account_id = ?', 
+                    [window.currentUser.id, window.currentAccount.id], 
+                    'date DESC LIMIT 1'
+                );
+
+                if (error) throw error;
+
+                if (stats && stats.length > 0) {
+                    const latestStats = stats[0];
+                    
+                    // Update current stats display
+                    document.getElementById('currentTwitch').textContent = Utils.formatNumber(latestStats.twitch || 0);
+                    document.getElementById('currentYoutube').textContent = Utils.formatNumber(latestStats.youtube || 0);
+                    document.getElementById('currentTiktok').textContent = Utils.formatNumber(latestStats.tiktok || 0);
+                    document.getElementById('currentInstagram').textContent = Utils.formatNumber(latestStats.instagram || 0);
+                    
+                    // Update last updated
+                    document.getElementById('lastUpdated').textContent = Utils.formatDate(latestStats.date);
+                    
+                    // Fill form with current values
+                    document.getElementById('twitchFollowers').value = latestStats.twitch || 0;
+                    document.getElementById('youtubeSubscribers').value = latestStats.youtube || 0;
+                    document.getElementById('tiktokFollowers').value = latestStats.tiktok || 0;
+                    document.getElementById('instagramFollowers').value = latestStats.instagram || 0;
+                } else {
+                    // Reset to zeros if no data
+                    document.getElementById('currentTwitch').textContent = '0';
+                    document.getElementById('currentYoutube').textContent = '0';
+                    document.getElementById('currentTiktok').textContent = '0';
+                    document.getElementById('currentInstagram').textContent = '0';
+                    document.getElementById('lastUpdated').textContent = 'Never';
+                }
+
+            } catch (error) {
+                console.error('Failed to load current stats:', error);
+                Utils.showNotification('Failed to load current stats', 'error');
+            }
+        }
+
+        async function loadGrowthHistory() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                const { data: history, error } = SQLiteDB.getAll('growth_stats', 
+                    'user_id = ? AND account_id = ?', 
+                    [window.currentUser.id, window.currentAccount.id], 
+                    'date DESC LIMIT 10'
+                );
+
+                if (error) throw error;
+
+                const historyContainer = document.getElementById('growthHistory');
+
+                if (history && history.length > 0) {
+                    historyContainer.innerHTML = history.map((stat, index) => {
+                        const previousStat = index < history.length - 1 ? history[index + 1] : null;
+                        
+                        return `
+                            <div class="list-item">
+                                <div class="stat-history-info">
+                                    <div>
+                                        <strong>${Utils.formatDate(stat.date)}</strong>
+                                        <br>
+                                        <div class="mini-stats">
+                                            <span class="platform-twitch">${Utils.formatNumber(stat.twitch || 0)}</span>
+                                            <span class="platform-youtube">${Utils.formatNumber(stat.youtube || 0)}</span>
+                                            <span class="platform-tiktok">${Utils.formatNumber(stat.tiktok || 0)}</span>
+                                            <span class="platform-instagram">${Utils.formatNumber(stat.instagram || 0)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="growth-changes">
+                                    ${previousStat ? `
+                                        <div class="change-indicators">
+                                            ${getChangeIndicator(stat.twitch, previousStat.twitch, 'Twitch')}
+                                            ${getChangeIndicator(stat.youtube, previousStat.youtube, 'YouTube')}
+                                            ${getChangeIndicator(stat.tiktok, previousStat.tiktok, 'TikTok')}
+                                            ${getChangeIndicator(stat.instagram, previousStat.instagram, 'Instagram')}
+                                        </div>
+                                    ` : '<span class="text-secondary">First entry</span>'}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    historyContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-title">No growth data yet</div>
+                            <div class="empty-state-text">Update your stats to start tracking growth</div>
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error('Failed to load growth history:', error);
+                Utils.showNotification('Failed to load growth history', 'error');
+            }
+        }
+
+        function getChangeIndicator(current, previous, platform) {
+            if (current === null || previous === null) return '';
+            
+            const change = current - previous;
+            const changePercent = previous > 0 ? ((change / previous) * 100).toFixed(1) : 0;
+            
+            if (change > 0) {
+                return `<span class="change-positive">+${Utils.formatNumber(change)} (+${changePercent}%)</span>`;
+            } else if (change < 0) {
+                return `<span class="change-negative">${Utils.formatNumber(change)} (${changePercent}%)</span>`;
+            } else {
+                return `<span class="change-neutral">No change</span>`;
+            }
+        }
+
+        // Update stats form submission
+        document.getElementById('updateStatsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const twitch = parseInt(document.getElementById('twitchFollowers').value) || 0;
+            const youtube = parseInt(document.getElementById('youtubeSubscribers').value) || 0;
+            const tiktok = parseInt(document.getElementById('tiktokFollowers').value) || 0;
+            const instagram = parseInt(document.getElementById('instagramFollowers').value) || 0;
+
+            try {
+                const { data, error } = SQLiteDB.insert('growth_stats', {
+                        user_id: window.currentUser.id,
+                        account_id: window.currentAccount.id,
+                        twitch: twitch,
+                        youtube: youtube,
+                        tiktok: tiktok,
+                        instagram: instagram,
+                        date: new Date().toISOString()
+                    });
+
+                if (error) throw error;
+
+                Utils.showNotification('Stats updated successfully!', 'success');
+                
+                // Reload data
+                await loadCurrentStats();
+                await loadGrowthHistory();
+
+            } catch (error) {
+                console.error('Failed to update stats:', error);
+                Utils.showNotification('Failed to update stats', 'error');
+            }
+        });
+
+        // Add growth specific styles
+        const growthStyles = `
+            .mini-stats {
+                display: flex;
+                gap: 1rem;
+                font-size: 0.9rem;
+                margin-top: 0.25rem;
+            }
+            
+            .stat-history-info {
+                flex: 1;
+            }
+            
+            .growth-changes {
+                flex: 1;
+                text-align: right;
+            }
+            
+            .change-indicators {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+                font-size: 0.8rem;
+            }
+            
+            .change-positive {
+                color: var(--success);
+                font-weight: 600;
+            }
+            
+            .change-negative {
+                color: var(--danger);
+                font-weight: 600;
+            }
+            
+            .change-neutral {
+                color: var(--text-secondary);
+            }
+            
+            .platform-twitch, .platform-youtube, .platform-tiktok, .platform-instagram {
+                font-weight: 600;
+            }
+        `;
+
+        // Add styles to page
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = growthStyles;
+        document.head.appendChild(styleSheet);
+
+        // Load growth data when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (await Auth.checkAuth()) {
+                await loadCurrentStats();
+                await loadGrowthHistory();
+            }
+        });
+
+        // Reload growth data when account switches
+        document.addEventListener('accountSwitched', async () => {
+            await loadCurrentStats();
+            await loadGrowthHistory();
+        });
+
+        // Expose functions globally
+        window.loadGrowthHistory = loadGrowthHistory;
+        window.loadPageData = async () => {
+            await loadCurrentStats();
+            await loadGrowthHistory();
+        };
+    </script>
+</body>
+</html>

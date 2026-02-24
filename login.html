@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script>
+        // Apply theme immediately to prevent blank page
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.setAttribute('data-theme', 'lavender');
+            document.body.setAttribute('data-theme-mode', 'dark');
+            document.body.classList.add('data-loaded');
+        });
+        // Also apply immediately in case DOMContentLoaded already fired
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.setAttribute('data-theme', 'lavender');
+                document.body.setAttribute('data-theme-mode', 'dark');
+                document.body.classList.add('data-loaded');
+            });
+        } else {
+            document.body.setAttribute('data-theme', 'lavender');
+            document.body.setAttribute('data-theme-mode', 'dark');
+            document.body.classList.add('data-loaded');
+        }
+    </script>
+</head>
+<body class="no-sidebar" data-theme="lavender" data-theme-mode="dark">
+    <main class="main-content-full">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <h1>🌙 Stream Haven</h1>
+                    <p>Your complete streaming dashboard</p>
+                </div>
+
+                <!-- Sign Up Form -->
+                <div id="signupForm" class="auth-form">
+                    <h2>Create Account</h2>
+                    <form id="signupFormElement">
+                        <div class="form-group">
+                            <label class="form-label" for="signupName">Name</label>
+                            <input type="text" id="signupName" class="form-input" placeholder="Enter your name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="signupEmail">Email</label>
+                            <input type="email" id="signupEmail" class="form-input" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="signupPassword">Password</label>
+                            <input type="password" id="signupPassword" class="form-input" placeholder="Create a password (min 6 characters)" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="signupConfirmPassword">Confirm Password</label>
+                            <input type="password" id="signupConfirmPassword" class="form-input" placeholder="Confirm your password" required>
+                        </div>
+                        <button type="submit" class="btn">Create Account</button>
+                    </form>
+                    <p class="auth-switch">
+                        Already have an account? 
+                        <a href="#" onclick="switchToSignIn()">Sign In</a>
+                    </p>
+                </div>
+
+                <!-- Sign In Form -->
+                <div id="signinForm" class="auth-form hidden">
+                    <h2>Welcome Back</h2>
+                    <form id="signinFormElement">
+                        <div class="form-group">
+                            <label class="form-label" for="signinEmail">Email</label>
+                            <input type="email" id="signinEmail" class="form-input" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="signinPassword">Password</label>
+                            <input type="password" id="signinPassword" class="form-input" placeholder="Enter your password" required>
+                        </div>
+                        <button type="submit" class="btn">Sign In</button>
+                    </form>
+                    <p class="auth-switch">
+                        Don't have an account? 
+                        <a href="#" onclick="switchToSignUp()">Sign Up</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Login page specific functions
+        function switchToSignUp() {
+            document.getElementById('signupForm').classList.remove('hidden');
+            document.getElementById('signinForm').classList.add('hidden');
+        }
+
+        function switchToSignIn() {
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('signinForm').classList.remove('hidden');
+        }
+
+        // Handle sign up form submission
+        document.getElementById('signupFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupConfirmPassword').value;
+
+            await Auth.signUp(name, email, password, confirmPassword);
+        });
+
+        // Handle sign in form submission
+        document.getElementById('signinFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('signinEmail').value.trim();
+            const password = document.getElementById('signinPassword').value;
+
+            await Auth.signIn(email, password);
+        });
+
+        // Add login page specific styles
+        const loginStyles = `
+            .login-container {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 2rem;
+            }
+
+            .login-card {
+                background: var(--card-bg);
+                backdrop-filter: blur(10px);
+                border-radius: 1rem;
+                padding: 2.5rem;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 8px 32px var(--shadow);
+                max-width: 400px;
+                width: 100%;
+                animation: slideIn 0.5s ease;
+            }
+
+            .login-header {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+
+            .login-header h1 {
+                background: linear-gradient(135deg, var(--accent), var(--accent-light));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                font-size: 2rem;
+                font-weight: 700;
+                margin-bottom: 0.5rem;
+            }
+
+            .login-header p {
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+            }
+
+            .auth-form {
+                margin-bottom: 1rem;
+            }
+
+            .auth-form h2 {
+                color: var(--text-primary);
+                margin-bottom: 1.5rem;
+                text-align: center;
+                font-size: 1.25rem;
+            }
+
+            .auth-switch {
+                text-align: center;
+                margin-top: 1.5rem;
+                color: var(--text-secondary);
+                font-size: 0.9rem;
+            }
+
+            .auth-switch a {
+                color: var(--accent);
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+            .auth-switch a:hover {
+                color: var(--accent-hover);
+            }
+
+            @media (max-width: 480px) {
+                .login-container {
+                    padding: 1rem;
+                }
+                
+                .login-card {
+                    padding: 1.5rem;
+                }
+            }
+        `;
+
+        // Add styles to page
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = loginStyles;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html>

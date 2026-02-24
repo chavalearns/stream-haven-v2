@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Planner - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="no-sidebar">
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <h2>🌙 Stream Haven</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="planner.html" class="nav-link">Streams</a>
+            <a href="content-planner.html" class="nav-link active">Content</a>
+            <a href="calendar.html" class="nav-link">Calendar</a>
+            <a href="goals.html" class="nav-link">Goals</a>
+            <a href="game.html" class="nav-link">Game</a>
+            <a href="ideas.html" class="nav-link">Ideas</a>
+            <a href="growth.html" class="nav-link">Growth</a>
+            <a href="links.html" class="nav-link">Links</a>
+            <a href="themes.html" class="nav-link">Themes</a>
+            <a href="accounts.html" class="nav-link">Accounts</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span class="account-name">Account</span>
+            <div id="userEmail"></div>
+        </div>
+    </nav>
+
+    <main class="main-content-full">
+        <div class="page-header mb-3">
+            <h1>Content Planner</h1>
+            <p>Plan and track your content creation pipeline</p>
+        </div>
+
+        <!-- Add Content Form -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Add New Content</h3>
+            </div>
+            <form id="addContentForm">
+                <div class="form-group">
+                    <label class="form-label" for="contentTitle">Content Title</label>
+                    <input type="text" id="contentTitle" class="form-input" placeholder="Enter content title" required>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group">
+                        <label class="form-label" for="contentType">Type</label>
+                        <select id="contentType" class="form-select">
+                            <option value="stream">Stream</option>
+                            <option value="video">Video</option>
+                            <option value="short">Short</option>
+                            <option value="post">Post</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="contentDate">Scheduled Date</label>
+                        <input type="date" id="contentDate" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="contentStatus">Status</label>
+                        <select id="contentStatus" class="form-select">
+                            <option value="idea">Idea</option>
+                            <option value="planning">Planning</option>
+                            <option value="recording">Recording</option>
+                            <option value="editing">Editing</option>
+                            <option value="published">Published</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn">Add Content</button>
+            </form>
+        </div>
+
+        <!-- Content List -->
+        <div class="card">
+            <div class="widget-header">
+                <h3 class="widget-title">Content Pipeline</h3>
+                <span class="widget-badge" id="contentCount">0</span>
+            </div>
+            <div id="contentList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <div class="empty-state-title">No content planned</div>
+                    <div class="empty-state-text">Add your first content item to get started</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Content planner functions
+        async function loadContent() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                const { data: content, error } = SQLiteDB.getAll('content_planner', 'user_id = ? AND account_id = ?', [window.currentUser.id, window.currentAccount.id], 'date ASC');
+
+                if (error) throw error;
+
+                const contentList = document.getElementById('contentList');
+                const contentCount = document.getElementById('contentCount');
+                
+                contentCount.textContent = content?.length || 0;
+
+                if (content && content.length > 0) {
+                    contentList.innerHTML = content.map(item => `
+                        <div class="list-item">
+                            <div class="content-info">
+                                <div>
+                                    <strong>${item.title}</strong>
+                                    <br>
+                                    <span class="content-type">${CONTENT_TYPES[item.type].icon} ${CONTENT_TYPES[item.type].name}</span>
+                                    <br>
+                                    <span class="status-${item.status}">${CONTENT_STATUSES[item.status].name}</span>
+                                    <br>
+                                    <small class="text-secondary">Scheduled: ${Utils.formatDate(item.date)}</small>
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <select class="form-select" onchange="updateContentStatus('${item.id}', this.value)">
+                                    ${Object.entries(CONTENT_STATUSES).map(([key, status]) => 
+                                        `<option value="${key}" ${item.status === key ? 'selected' : ''}>${status.name}</option>`
+                                    ).join('')}
+                                </select>
+                                <button class="btn btn-danger" onclick="deleteContent('${item.id}')">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    contentList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <div class="empty-state-title">No content planned</div>
+                            <div class="empty-state-text">Add your first content item to get started</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load content:', error);
+                Utils.showNotification('Failed to load content', 'error');
+            }
+        }
+
+        // Add new content
+        document.getElementById('addContentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('contentTitle').value.trim();
+            const type = document.getElementById('contentType').value;
+            const date = document.getElementById('contentDate').value;
+            const status = document.getElementById('contentStatus').value;
+
+            if (!title || !date) {
+                Utils.showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+
+            try {
+                const { data, error } = SQLiteDB.insert('content_planner', {
+                        user_id: window.currentUser.id,
+                        account_id: window.currentAccount.id,
+                        title: title,
+                        type: type,
+                        date: date,
+                        status: status
+                    });
+
+                if (error) throw error;
+
+                Utils.showNotification('Content added successfully!', 'success');
+                
+                // Reset form
+                document.getElementById('addContentForm').reset();
+                
+                // Set default date to today
+                document.getElementById('contentDate').value = new Date().toISOString().split('T')[0];
+                
+                // Reload content
+                await loadContent();
+
+            } catch (error) {
+                console.error('Failed to add content:', error);
+                if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                    Utils.showNotification('Failed to add content', 'error');
+                } else {
+                    alert('Failed to add content: ' + error.message);
+                }
+            }
+        });
+
+        // Update content status
+        async function updateContentStatus(contentId, newStatus) {
+            try {
+                const { error } = SQLiteDB.update('content_planner', 
+                    { status: newStatus }, 
+                    'id = ? AND user_id = ?', 
+                    [contentId, window.currentUser.id]
+                );
+
+                if (error) throw error;
+
+                Utils.showNotification('Content status updated', 'success');
+                await loadContent();
+
+            } catch (error) {
+                console.error('Failed to update content status:', error);
+                if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                    Utils.showNotification('Failed to update content status', 'error');
+                } else {
+                    alert('Failed to update content status: ' + error.message);
+                }
+            }
+        }
+
+        // Delete content
+        async function deleteContent(contentId) {
+            if (!confirm('Are you sure you want to delete this content?')) {
+                return;
+            }
+
+            try {
+                const { error } = SQLiteDB.delete('content_planner', 'id = ? AND user_id = ?', [contentId, window.currentUser.id]);
+
+                if (error) throw error;
+
+                Utils.showNotification('Content deleted successfully', 'success');
+                await loadContent();
+
+            } catch (error) {
+                console.error('Failed to delete content:', error);
+                if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                    Utils.showNotification('Failed to delete content', 'error');
+                } else {
+                    alert('Failed to delete content: ' + error.message);
+                }
+            }
+        }
+
+        // Set default date to today
+        function setDefaultDate() {
+            const dateInput = document.getElementById('contentDate');
+            if (dateInput) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+                dateInput.min = new Date().toISOString().split('T')[0];
+            }
+        }
+
+        // Load content when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (await Auth.checkAuth()) {
+                setDefaultDate();
+                await loadContent();
+            }
+        });
+
+        // Reload content when account switches
+        document.addEventListener('accountSwitched', loadContent);
+
+        // Expose functions globally
+        window.updateContentStatus = updateContentStatus;
+        window.deleteContent = deleteContent;
+        window.loadPageData = loadContent;
+    </script>
+</body>
+</html>

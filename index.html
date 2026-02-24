@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="no-sidebar">
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <h2>🌙 Stream Haven</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link active">Dashboard</a>
+            <a href="planner.html" class="nav-link">Streams</a>
+            <a href="content-planner.html" class="nav-link">Content</a>
+            <a href="calendar.html" class="nav-link">Calendar</a>
+            <a href="goals.html" class="nav-link">Goals</a>
+            <a href="game.html" class="nav-link">Game</a>
+            <a href="ideas.html" class="nav-link">Ideas</a>
+            <a href="growth.html" class="nav-link">Growth</a>
+            <a href="links.html" class="nav-link">Links</a>
+            <a href="themes.html" class="nav-link">Themes</a>
+            <a href="accounts.html" class="nav-link">Accounts</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span class="account-name">Account</span>
+            <div id="userEmail"></div>
+        </div>
+    </nav>
+
+    <main class="main-content-full">
+        <!-- Welcome Section -->
+        <div class="welcome-section mb-3">
+            <h1 id="welcomeMessage">Welcome back!</h1>
+            <p class="text-secondary">Here's what's happening with your streaming journey today.</p>
+        </div>
+
+        <!-- Next Stream Hero Card -->
+        <div class="hero-card mb-3" id="nextStreamCard">
+            <h3>Next Stream</h3>
+            <div id="nextStreamContent">
+                <p>No upcoming streams scheduled</p>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Growth Stats</h3>
+                <a href="growth.html" class="btn btn-secondary">Update</a>
+            </div>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-number" id="twitchStat">0</div>
+                    <div class="stat-label platform-twitch">Twitch</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="youtubeStat">0</div>
+                    <div class="stat-label platform-youtube">YouTube</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="tiktokStat">0</div>
+                    <div class="stat-label platform-tiktok">TikTok</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="instagramStat">0</div>
+                    <div class="stat-label platform-instagram">Instagram</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <!-- This Week Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">This Week</h3>
+                    <span class="widget-badge" id="weekCount">0</span>
+                </div>
+                <div class="widget-content" id="weekContent">
+                    <p>No streams or content scheduled</p>
+                </div>
+                <div class="widget-footer">
+                    <small>Stay productive!</small>
+                </div>
+            </div>
+
+            <!-- Current Goal Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">Current Goal</h3>
+                    <span class="widget-badge" id="goalProgress">0%</span>
+                </div>
+                <div class="widget-content" id="goalContent">
+                    <p>No active goals</p>
+                </div>
+                <div class="progress-bar mt-2">
+                    <div class="progress-fill" id="goalProgressBar" style="width: 0%"></div>
+                </div>
+                <div class="widget-footer">
+                    <small>Keep pushing forward!</small>
+                </div>
+            </div>
+
+            <!-- Recent Ideas Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <h3 class="widget-title">Recent Ideas</h3>
+                    <span class="widget-badge" id="ideasCount">0</span>
+                </div>
+                <div class="widget-content" id="ideasContent">
+                    <p>No ideas yet</p>
+                </div>
+                <div class="widget-footer">
+                    <small>Creativity never stops!</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Quick Actions</h3>
+            </div>
+            <div class="quick-actions">
+                <a href="planner.html" class="action-btn">
+                    <div class="action-icon">📅</div>
+                    <div class="action-label">Schedule Stream</div>
+                </a>
+                <a href="content-planner.html" class="action-btn">
+                    <div class="action-icon">📝</div>
+                    <div class="action-label">Plan Content</div>
+                </a>
+                <a href="goals.html" class="action-btn">
+                    <div class="action-icon">🎯</div>
+                    <div class="action-label">Set Goal</div>
+                </a>
+                <a href="ideas.html" class="action-btn">
+                    <div class="action-icon">💡</div>
+                    <div class="action-label">Add Idea</div>
+                </a>
+                <a href="growth.html" class="action-btn">
+                    <div class="action-icon">📊</div>
+                    <div class="action-label">Update Stats</div>
+                </a>
+                <a href="calendar.html" class="action-btn">
+                    <div class="action-icon">📆</div>
+                    <div class="action-label">View Calendar</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Motivational Quote -->
+        <div class="quote-card" id="quoteCard">
+            <div class="quote-text" id="quoteText">
+                "Success is not final, failure is not fatal: it is the courage to continue that counts."
+            </div>
+            <div class="quote-author" id="quoteAuthor">
+                — Winston Churchill
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Fallback theme application to prevent blank page
+        if (!document.body.hasAttribute('data-theme')) {
+            document.body.setAttribute('data-theme', 'lavender');
+            document.body.setAttribute('data-theme-mode', 'dark');
+            document.body.classList.add('data-loaded');
+        }
+        
+        // Additional immediate theme application
+        document.body.setAttribute('data-theme', 'lavender');
+        document.body.setAttribute('data-theme-mode', 'dark');
+        document.body.classList.add('data-loaded');
+        
+        // Dashboard specific functions
+        async function loadDashboardData() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                // Load all dashboard data in parallel
+                await Promise.all([
+                    loadNextStream(),
+                    loadStats(),
+                    loadThisWeek(),
+                    loadCurrentGoal(),
+                    loadRecentIdeas(),
+                    loadWelcomeMessage(),
+                    loadRandomQuote()
+                ]);
+
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+                Utils.showNotification('Failed to load dashboard data', 'error');
+            }
+        }
+
+        // Load next stream
+        async function loadNextStream() {
+            try {
+                const { data: streams, error } = SQLiteDB.getAll('streams', 'account_id = ? AND completed = 0', [window.currentAccount.id], 'date ASC')
+
+                if (error) throw error;
+
+                const nextStreamContent = document.getElementById('nextStreamContent');
+                
+                if (streams && streams.length > 0) {
+                    const stream = streams[0];
+                    const timeUntil = Utils.getTimeUntil(stream.date);
+                    
+                    nextStreamContent.innerHTML = `
+                        <h4>${stream.title}</h4>
+                        <div class="countdown">${timeUntil}</div>
+                        <div class="countdown-label">${Utils.formatDateTime(stream.date)}</div>
+                        <div class="mt-2">
+                            <span class="platform-${stream.platform}">${PLATFORMS[stream.platform].name}</span>
+                        </div>
+                    `;
+                } else {
+                    nextStreamContent.innerHTML = `
+                        <p>No upcoming streams scheduled</p>
+                        <a href="planner.html" class="btn btn-secondary mt-2">Schedule Stream</a>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load next stream:', error);
+            }
+        }
+
+        // Load growth stats
+        async function loadStats() {
+            try {
+                const { data: stats, error } = SQLiteDB.getAll('growth_stats', 'account_id = ?', [window.currentAccount.id], 'date DESC')
+
+                if (error) throw error;
+
+                if (stats && stats.length > 0) {
+                    const stat = stats[0];
+                    document.getElementById('twitchStat').textContent = Utils.formatNumber(stat.twitch || 0);
+                    document.getElementById('youtubeStat').textContent = Utils.formatNumber(stat.youtube || 0);
+                    document.getElementById('tiktokStat').textContent = Utils.formatNumber(stat.tiktok || 0);
+                    document.getElementById('instagramStat').textContent = Utils.formatNumber(stat.instagram || 0);
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Load this week's content
+        async function loadThisWeek() {
+            try {
+                const weekRange = Utils.getWeekRange();
+                
+                // Load streams
+                const { data: streams, error: streamsError } = SQLiteDB.getAll('streams', 'account_id = ? AND date >= ? AND date <= ?', [window.currentAccount.id, weekRange.start.toISOString(), weekRange.end.toISOString()]);
+
+                // Load content
+                const { data: content, error: contentError } = SQLiteDB.getAll('content_planner', 'account_id = ? AND date >= ? AND date <= ?', [window.currentAccount.id, weekRange.start.toISOString(), weekRange.end.toISOString()]);
+
+                if (streamsError) throw streamsError;
+                if (contentError) throw contentError;
+
+                const totalItems = (streams?.length || 0) + (content?.length || 0);
+                document.getElementById('weekCount').textContent = totalItems;
+
+                const weekContent = document.getElementById('weekContent');
+                if (totalItems > 0) {
+                    const streamCount = streams?.length || 0;
+                    const contentCount = content?.length || 0;
+                    weekContent.innerHTML = `
+                        <p><strong>${streamCount}</strong> stream${streamCount !== 1 ? 's' : ''}</p>
+                        <p><strong>${contentCount}</strong> content item${contentCount !== 1 ? 's' : ''}</p>
+                    `;
+                } else {
+                    weekContent.innerHTML = '<p>No streams or content scheduled</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load this week:', error);
+            }
+        }
+
+        // Load current goal
+        async function loadCurrentGoal() {
+            try {
+                const { data: goals, error } = SQLiteDB.getAll('goals', 'account_id = ? AND completed = 0', [window.currentAccount.id], 'created_at DESC')
+
+                if (error) throw error;
+
+                const goalContent = document.getElementById('goalContent');
+                const progressBar = document.getElementById('goalProgressBar');
+                const progressBadge = document.getElementById('goalProgress');
+
+                if (goals && goals.length > 0) {
+                    const goal = goals[0];
+                    const percentage = Utils.calculatePercentage(goal.current, goal.target);
+                    
+                    goalContent.innerHTML = `<p><strong>${goal.text}</strong></p>`;
+                    progressBar.style.width = `${percentage}%`;
+                    progressBadge.textContent = `${percentage}%`;
+                } else {
+                    goalContent.innerHTML = '<p>No active goals</p>';
+                    progressBar.style.width = '0%';
+                    progressBadge.textContent = '0%';
+                }
+            } catch (error) {
+                console.error('Failed to load current goal:', error);
+            }
+        }
+
+        // Load recent ideas
+        async function loadRecentIdeas() {
+            try {
+                const { data: ideas, error } = SQLiteDB.getAll('ideas', 'account_id = ?', [window.currentAccount.id], 'created_at DESC')
+
+                if (error) throw error;
+
+                const count = ideas?.length || 0;
+                document.getElementById('ideasCount').textContent = count;
+
+                const ideasContent = document.getElementById('ideasContent');
+                if (ideas && ideas.length > 0) {
+                    ideasContent.innerHTML = ideas.map(idea => 
+                        `<p>• ${idea.title}</p>`
+                    ).join('');
+                } else {
+                    ideasContent.innerHTML = '<p>No ideas yet</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load recent ideas:', error);
+            }
+        }
+
+        // Load welcome message
+        async function loadWelcomeMessage() {
+            try {
+                const { data: streams, error } = SQLiteDB.getAll('streams', 'account_id = ?', [window.currentAccount.id], 'created_at DESC')
+
+                if (error) throw error;
+
+                const welcomeElement = document.getElementById('welcomeMessage');
+                
+                if (!streams || streams.length === 0) {
+                    welcomeElement.textContent = `Welcome to Stream Haven, ${window.currentUser.name || 'Streamer'}! 🎉`;
+                } else {
+                    const lastStream = new Date(streams[0].created_at);
+                    const daysSince = Math.floor((new Date() - lastStream) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysSince === 0) {
+                        welcomeElement.textContent = 'Welcome back! Great to see you streaming today! 🚀';
+                    } else if (daysSince <= 7) {
+                        welcomeElement.textContent = 'Welcome back! Keep up the great work! 💪';
+                    } else {
+                        welcomeElement.textContent = 'Welcome back! Time to get back to streaming! 🎮';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load welcome message:', error);
+                document.getElementById('welcomeMessage').textContent = 'Welcome back!';
+            }
+        }
+
+        // Load random quote
+        function loadRandomQuote() {
+            const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+            document.getElementById('quoteText').textContent = `"${quote.text}"`;
+            document.getElementById('quoteAuthor').textContent = `— ${quote.author}`;
+        }
+
+        // Load dashboard data when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait for auth to be ready
+            if (await Auth.checkAuth()) {
+                await loadDashboardData();
+            }
+        });
+
+        // Reload data when account switches
+        document.addEventListener('accountSwitched', loadDashboardData);
+
+        // Expose load function globally
+        window.loadPageData = loadDashboardData;
+    </script>
+</body>
+</html>

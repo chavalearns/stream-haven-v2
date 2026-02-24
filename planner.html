@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Planner - Stream Haven V2</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body class="no-sidebar">
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <h2>🌙 Stream Haven</h2>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Dashboard</a>
+            <a href="planner.html" class="nav-link active">Streams</a>
+            <a href="content-planner.html" class="nav-link">Content</a>
+            <a href="calendar.html" class="nav-link">Calendar</a>
+            <a href="goals.html" class="nav-link">Goals</a>
+            <a href="game.html" class="nav-link">Game</a>
+            <a href="ideas.html" class="nav-link">Ideas</a>
+            <a href="growth.html" class="nav-link">Growth</a>
+            <a href="links.html" class="nav-link">Links</a>
+            <a href="themes.html" class="nav-link">Themes</a>
+            <a href="accounts.html" class="nav-link">Accounts</a>
+            <a href="settings.html" class="nav-link">Settings</a>
+        </div>
+        <div class="nav-user">
+            <span class="account-name">Account</span>
+            <div id="userEmail"></div>
+        </div>
+    </nav>
+
+    <main class="main-content-full">
+        <div class="page-header mb-3">
+            <h1>Stream Planner</h1>
+            <p>Schedule and manage your streaming sessions</p>
+        </div>
+
+        <!-- Add Stream Form -->
+        <div class="card mb-3">
+            <div class="widget-header">
+                <h3 class="widget-title">Schedule New Stream</h3>
+            </div>
+            <form id="addStreamForm">
+                <div class="form-group">
+                    <label class="form-label" for="streamTitle">Stream Title</label>
+                    <input type="text" id="streamTitle" class="form-input" placeholder="Enter stream title" required>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label" for="streamDate">Date & Time</label>
+                        <input type="datetime-local" id="streamDate" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="streamPlatform">Platform</label>
+                        <select id="streamPlatform" class="form-select">
+                            <option value="twitch">Twitch</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="instagram">Instagram</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn">Schedule Stream</button>
+            </form>
+        </div>
+
+        <!-- Streams List -->
+        <div class="card">
+            <div class="widget-header">
+                <h3 class="widget-title">Scheduled Streams</h3>
+                <span class="widget-badge" id="streamCount">0</span>
+            </div>
+            <div id="streamsList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div class="empty-state-title">No streams scheduled</div>
+                    <div class="empty-state-text">Schedule your first stream to get started</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/sqlite-adapter.js"></script>
+    <script src="js/local-auth.js"></script>
+    <script src="js/app-config.js"></script>
+    <script src="js/data-api.js"></script>
+    <script>
+        // Platform constants
+        const PLATFORMS = {
+            twitch: { name: 'Twitch', color: '#9146ff' },
+            youtube: { name: 'YouTube', color: '#ff0000' },
+            tiktok: { name: 'TikTok', color: '#000000' },
+            instagram: { name: 'Instagram', color: '#E4405F' }
+        };
+
+        // Stream planner functions
+        async function loadStreams() {
+            try {
+                if (!Auth.isAuthenticated()) {
+                    return;
+                }
+
+                const { data: streams, error } = SQLiteDB.getAll('streams', 'user_id = ? AND account_id = ?', [window.currentUser.id, window.currentAccount.id], 'date ASC');
+
+                if (error) throw error;
+
+                const streamsList = document.getElementById('streamsList');
+                const streamCount = document.getElementById('streamCount');
+                
+                streamCount.textContent = streams?.length || 0;
+
+                if (streams && streams.length > 0) {
+                    streamsList.innerHTML = streams.map(stream => `
+                        <div class="list-item ${stream.completed ? 'completed' : ''}">
+                            <div class="stream-info">
+                                <div>
+                                    <strong>${stream.title}</strong>
+                                    ${stream.completed ? '<span class="badge">Completed</span>' : ''}
+                                    <br>
+                                    <span class="platform-${stream.platform}">${PLATFORMS[stream.platform].name}</span>
+                                    <br>
+                                    <small class="text-secondary">${Utils.formatDateTime(stream.date)}</small>
+                                    ${!stream.completed ? `<br><small class="text-secondary">${Utils.getTimeUntil(stream.date)}</small>` : ''}
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                ${!stream.completed ? 
+                                    `<button class="btn btn-success" onclick="completeStream('${stream.id}')">Complete</button>` : 
+                                    `<button class="btn btn-secondary" onclick="uncompleteStream('${stream.id}')">Undo</button>`
+                                }
+                                <button class="btn btn-danger" onclick="deleteStream('${stream.id}')">Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    streamsList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📅</div>
+                            <div class="empty-state-title">No streams scheduled</div>
+                            <div class="empty-state-text">Schedule your first stream to get started</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load streams:', error);
+                Utils.showNotification('Failed to load streams', 'error');
+            }
+        }
+
+        // Add new stream
+        document.getElementById('addStreamForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('streamTitle').value.trim();
+            const date = document.getElementById('streamDate').value;
+            const platform = document.getElementById('streamPlatform').value;
+
+            if (!title || !date) {
+                if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                    Utils.showNotification('Please fill in all fields', 'error');
+                } else {
+                    alert('Please fill in all fields');
+                }
+                return;
+            }
+
+            try {
+                const { data, error } = SQLiteDB.insert('streams', {
+                    user_id: window.currentUser.id,
+                    account_id: window.currentAccount.id,
+                    title: title,
+                    date: date,
+                    platform: platform,
+                    completed: false
+                });
+
+                if (error) throw error;
+
+                Utils.showNotification('Stream scheduled successfully!', 'success');
+                
+                // Reset form
+                document.getElementById('addStreamForm').reset();
+                
+                // Set default date to tomorrow
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(19, 0, 0, 0);
+                document.getElementById('streamDate').value = tomorrow.toISOString().slice(0, 16);
+                
+                // Reload streams
+                await loadStreams();
+
+            } catch (error) {
+                console.error('Failed to schedule stream:', error);
+                if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                    Utils.showNotification('Failed to schedule stream', 'error');
+                } else {
+                    alert('Failed to schedule stream: ' + error.message);
+                }
+            }
+        });
+
+        // Complete stream
+        async function completeStream(streamId) {
+            try {
+                const { error } = SQLiteDB.update('streams', 
+                    { completed: true }, 
+                    'id = ? AND user_id = ?', 
+                    [streamId, window.currentUser.id]
+                );
+
+                if (error) throw error;
+
+                Utils.showNotification('Stream marked as completed!', 'success');
+                await loadStreams();
+
+            } catch (error) {
+                console.error('Failed to complete stream:', error);
+                Utils.showNotification('Failed to complete stream', 'error');
+            }
+        }
+
+        // Undo complete stream
+        async function uncompleteStream(streamId) {
+            try {
+                const { error } = SQLiteDB.update('streams', 
+                    { completed: false }, 
+                    'id = ? AND user_id = ?', 
+                    [streamId, window.currentUser.id]
+                );
+
+                if (error) throw error;
+
+                Utils.showNotification('Stream completion undone', 'success');
+                await loadStreams();
+
+            } catch (error) {
+                console.error('Failed to undo stream completion:', error);
+                Utils.showNotification('Failed to undo stream completion', 'error');
+            }
+        }
+
+        // Delete stream
+        async function deleteStream(streamId) {
+            if (!confirm('Are you sure you want to delete this stream?')) {
+                return;
+            }
+
+            try {
+                const { error } = SQLiteDB.delete('streams', 
+                    'id = ? AND user_id = ?', 
+                    [streamId, window.currentUser.id]
+                );
+
+                if (error) throw error;
+
+                Utils.showNotification('Stream deleted successfully', 'success');
+                await loadStreams();
+
+            } catch (error) {
+                console.error('Failed to delete stream:', error);
+                Utils.showNotification('Failed to delete stream', 'error');
+            }
+        }
+
+        // Set default datetime to tomorrow 7 PM
+        function setDefaultDateTime() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(19, 0, 0, 0);
+            
+            const dateInput = document.getElementById('streamDate');
+            if (dateInput) {
+                dateInput.value = tomorrow.toISOString().slice(0, 16);
+                dateInput.min = new Date().toISOString().slice(0, 16);
+            }
+        }
+
+        // Load streams when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (await Auth.checkAuth()) {
+                setDefaultDateTime();
+                await loadStreams();
+            }
+        });
+
+        // Reload streams when account switches
+        document.addEventListener('accountSwitched', loadStreams);
+
+        // Expose functions globally
+        window.completeStream = completeStream;
+        window.uncompleteStream = uncompleteStream;
+        window.deleteStream = deleteStream;
+        window.loadPageData = loadStreams;
+    </script>
+</body>
+</html>
